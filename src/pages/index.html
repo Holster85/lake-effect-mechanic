@@ -1,0 +1,763 @@
+<html lang="en"><head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      p.timestamp = message.timestamp;
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lake Effect Mechanic - Mobile Auto Repair Oswego, Fulton, Mexico NY</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    * {
+        font-family: 'Inter', sans-serif;
+        scroll-behavior: smooth;
+    }
+    
+    .gradient-bg {
+        background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    }
+    
+    .service-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .service-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px -10px rgba(26, 54, 93, 0.2);
+        border-color: #1a365d;
+    }
+    
+    .btn-call {
+        background: #e53e3e;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-call:hover {
+        background: #c53030;
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px -5px rgba(229, 62, 62, 0.4);
+    }
+    
+    .btn-text {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-text:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 25px -5px rgba(26, 54, 93, 0.3);
+    }
+    
+    .feature-icon {
+        background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .nav-link {
+        position: relative;
+    }
+    
+    .nav-link::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -4px;
+        left: 0;
+        background-color: #e53e3e;
+        transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover::after {
+        width: 100%;
+    }
+</style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.bottom-0{bottom:0px}.left-0{left:0px}.right-0{right:0px}.top-0{top:0px}.z-10{z-index:10}.z-40{z-index:40}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.mb-1{margin-bottom:0.25rem}.mb-12{margin-bottom:3rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mb-8{margin-bottom:2rem}.mr-2{margin-right:0.5rem}.mr-3{margin-right:0.75rem}.mr-4{margin-right:1rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-14{height:3.5rem}.w-14{width:3.5rem}.max-w-2xl{max-width:42rem}.max-w-4xl{max-width:56rem}.max-w-7xl{max-width:80rem}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-12{gap:3rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.gap-8{gap:2rem}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-8 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(2rem * var(--tw-space-x-reverse));margin-left:calc(2rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.break-all{word-break:break-all}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-t{border-top-width:1px}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-white\/20{border-color:rgb(255 255 255 / 0.2)}.bg-\[\#1a365d\]{--tw-bg-opacity:1;background-color:rgb(26 54 93 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/10{background-color:rgb(255 255 255 / 0.1)}.p-2{padding:0.5rem}.p-4{padding:1rem}.p-6{padding:1.5rem}.p-8{padding:2rem}.px-4{padding-left:1rem;padding-right:1rem}.px-8{padding-left:2rem;padding-right:2rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-16{padding-top:4rem;padding-bottom:4rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-4{padding-bottom:1rem}.pt-8{padding-top:2rem}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-4xl{font-size:2.25rem;line-height:2.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.font-normal{font-weight:400}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-tight{letter-spacing:-0.025em}.tracking-wide{letter-spacing:0.025em}.text-\[\#1a365d\]{--tw-text-opacity:1;color:rgb(26 54 93 / var(--tw-text-opacity, 1))}.text-\[\#e53e3e\]{--tw-text-opacity:1;color:rgb(229 62 62 / var(--tw-text-opacity, 1))}.text-blue-100{--tw-text-opacity:1;color:rgb(219 234 254 / var(--tw-text-opacity, 1))}.text-blue-200{--tw-text-opacity:1;color:rgb(191 219 254 / var(--tw-text-opacity, 1))}.text-green-400{--tw-text-opacity:1;color:rgb(74 222 128 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.opacity-10{opacity:0.1}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-\[\#2c5282\]:hover{--tw-bg-opacity:1;background-color:rgb(44 82 130 / var(--tw-bg-opacity, 1))}.hover\:bg-blue-50:hover{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.hover\:text-\[\#1a365d\]:hover{--tw-text-opacity:1;color:rgb(26 54 93 / var(--tw-text-opacity, 1))}.hover\:text-blue-200:hover{--tw-text-opacity:1;color:rgb(191 219 254 / var(--tw-text-opacity, 1))}.hover\:text-white:hover{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}@media (min-width: 640px){.sm\:block{display:block}.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:p-12{padding:3rem}.sm\:p-8{padding:2rem}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:py-24{padding-top:6rem;padding-bottom:6rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-4xl{font-size:2.25rem;line-height:2.5rem}.sm\:text-5xl{font-size:3rem;line-height:1}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}}@media (min-width: 768px){.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.md\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:block{display:block}.lg\:flex{display:flex}.lg\:hidden{display:none}.lg\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.lg\:p-12{padding:3rem}.lg\:px-8{padding-left:2rem;padding-right:2rem}.lg\:text-5xl{font-size:3rem;line-height:1}.lg\:text-6xl{font-size:3.75rem;line-height:1}}</style></head>
+<body class="bg-slate-50" style="padding-bottom: 80px;">
+    <!-- Sticky Header -->
+    <header class="gradient-bg text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white rounded-lg p-2">
+                        <i class="fas fa-wrench text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Lake Effect Mechanic</h1>
+                        <p class="text-xs sm:text-sm text-blue-100 hidden sm:block">Mobile Auto Repair That Comes To You</p>
+                    </div>
+                </div>
+                <nav class="hidden lg:flex items-center space-x-8">
+                    <a href="#services" class="nav-link text-sm font-medium hover:text-blue-200">Services</a>
+                    <a href="#area" class="nav-link text-sm font-medium hover:text-blue-200">Service Area</a>
+                    <a href="#why-us" class="nav-link text-sm font-medium hover:text-blue-200">Why Choose Us</a>
+                    <a href="#book" class="nav-link text-sm font-medium hover:text-blue-200">Book Now</a>
+                </nav>
+                <button id="mobile-menu-btn" class="lg:hidden text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden lg:hidden pb-4">
+                <a href="#services" class="block py-2 text-sm font-medium hover:text-blue-200">Services</a>
+                <a href="#area" class="block py-2 text-sm font-medium hover:text-blue-200">Service Area</a>
+                <a href="#why-us" class="block py-2 text-sm font-medium hover:text-blue-200">Why Choose Us</a>
+                <a href="#book" class="block py-2 text-sm font-medium hover:text-blue-200">Book Now</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=" 60"="" height="60" viewbox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" %3e%3cg="" fill="none" fill-rule="evenodd" fill-opacity="1" %3e%3cpath="" d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z" %3e%3c="" g%3e%3c="" svg%3e');"=""></div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="animate-fade-in">
+                    <div class="inline-block bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+                        <p class="text-sm font-semibold"><i class="fas fa-shield-alt mr-2"></i>Fully Insured &amp; Professional</p>
+                    </div>
+                    <h2 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+                        Your Mechanic<br>Comes To You
+                    </h2>
+                    <p class="text-xl text-blue-100 mb-8 leading-relaxed">
+                        Skip the tow truck. Skip the shop wait. We bring professional auto repair right to your driveway in Oswego, Fulton, and Mexico NY.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                        <a href="tel:315-596-1157" class="btn-call text-white px-8 py-4 rounded-lg font-bold text-lg flex items-center justify-center shadow-xl">
+                            <i class="fas fa-phone-alt mr-3"></i>Call 315-596-1157
+                        </a>
+                        <a href="sms:315-596-1157" class="btn-text bg-white text-[#1a365d] px-8 py-4 rounded-lg font-bold text-lg flex items-center justify-center shadow-xl hover:bg-blue-50">
+                            <i class="fas fa-comment-dots mr-3"></i>Text Us
+                        </a>
+                    </div>
+                    <div class="flex flex-wrap gap-6 text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-400 mr-2 text-xl"></i>
+                            <span class="font-semibold">Text answered 7 days a week</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-dollar-sign text-green-400 mr-2 text-xl"></i>
+                            <span class="font-semibold">$100/hr Labor</span>
+                        </div>
+                    </div>
+                <div class="hidden lg:block">
+                    <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 shadow-2xl border border-white/20">
+                        <h3 class="text-2xl font-bold mb-6">Quick Contact</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-phone text-2xl mr-4 mt-1"></i>
+                                <div>
+                                    <p class="text-sm text-blue-100">Call or Text</p>
+                                    <a href="tel:315-596-1157" class="text-xl font-bold hover:text-blue-200">315-596-1157</a>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-envelope text-2xl mr-4 mt-1"></i>
+                                <div>
+                                    <p class="text-sm text-blue-100">Email</p>
+                                    <a href="mailto:Lbarone917@gmail.com" class="text-lg font-semibold hover:text-blue-200 break-all">Lbarone917@gmail.com</a>
+                                </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-clock text-2xl mr-4 mt-1"></i>
+                                <div>
+                                    <p class="text-sm text-blue-100">Hours</p>
+                                    <p class="font-semibold">Mon-Fri: 8am–6pm<br>Sat: By Appointment</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div></section>
+
+    <!-- Trust Badges -->
+    <section class="bg-white py-8 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-certificate text-3xl mb-2" style="color: #1a365d;"></i>
+                    <span class="font-semibold text-sm text-slate-700">ASE Certified</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-clipboard-check text-3xl mb-2" style="color: #1a365d;"></i>
+                    <span class="font-semibold text-sm text-slate-700">NYS Inspector</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-shield-alt text-3xl mb-2" style="color: #1a365d;"></i>
+                    <span class="font-semibold text-sm text-slate-700">Fully Insured</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-hand-holding-usd text-3xl mb-2" style="color: #1a365d;"></i>
+                    <span class="font-semibold text-sm text-slate-700">Upfront Pricing</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mobile Services Section -->
+    <section id="services" class="py-16 sm:py-24 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <span class="text-[#e53e3e] font-bold text-sm uppercase tracking-wide">Our Services</span>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mt-2 mb-4">Mobile Services We Offer</h2>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto">Professional automotive repair and diagnostics performed at your location. No tow needed.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-bolt text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Electrical Diagnostics</h3>
+                    <p class="text-slate-600 leading-relaxed">Advanced troubleshooting for complex electrical issues, wiring problems, and system failures using professional diagnostic equipment.</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-car-crash text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Brake Service</h3>
+                    <p class="text-slate-600 leading-relaxed">Complete brake system inspection, pad and rotor replacement, and brake line repair to keep you safe on the road.</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-car-battery text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Batteries &amp; Starters</h3>
+                    <p class="text-slate-600 leading-relaxed">Battery testing, replacement, and starter/alternator diagnostics. Get your vehicle starting reliably again.</p>
+                </div>
+                <!-- Card 4 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-clipboard-list text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">NY State Inspection</h3>
+                    <p class="text-slate-600 leading-relaxed">Official New York State vehicle safety and emissions inspections performed at your home or workplace.</p>
+                </div>
+                <!-- Card 5 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-engine-warning text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Check Engine Light</h3>
+                    <p class="text-slate-600 leading-relaxed">Professional code scanning and diagnosis to identify why your check engine light is on and fix it right the first time.</p>
+                </div>
+                <!-- Card 6 -->
+                <div class="service-card bg-white rounded-xl p-8 shadow-md">
+                    <div class="feature-icon w-14 h-14 rounded-lg flex items-center justify-center mb-6">
+                        <i class="fas fa-gas-pump text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Fuel Systems</h3>
+                    <p class="text-slate-600 leading-relaxed">Fuel pump diagnosis, injector cleaning, and complete fuel system repair to restore performance and efficiency.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Area Section -->
+    <section id="area" class="py-16 sm:py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <span class="text-[#e53e3e] font-bold text-sm uppercase tracking-wide">Service Area</span>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 mt-2 mb-6">Serving Central New York</h2>
+                    <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+                        We proudly provide mobile mechanic services throughout Oswego County and surrounding areas. We come directly to your home, workplace, or roadside location.
+                    </p>
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center bg-slate-50 rounded-lg p-4">
+                            <i class="fas fa-map-marker-alt text-2xl mr-4" style="color: #e53e3e;"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Oswego, NY</h3>
+                                <p class="text-sm text-slate-600">Full service coverage</p>
+                            </div>
+                        <div class="flex items-center bg-slate-50 rounded-lg p-4">
+                            <i class="fas fa-map-marker-alt text-2xl mr-4" style="color: #e53e3e;"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Fulton, NY</h3>
+                                <p class="text-sm text-slate-600">Full service coverage</p>
+                            </div>
+                        <div class="flex items-center bg-slate-50 rounded-lg p-4">
+                            <i class="fas fa-map-marker-alt text-2xl mr-4" style="color: #e53e3e;"></i>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Mexico, NY</h3>
+                                <p class="text-sm text-slate-600">Full service coverage</p>
+                            </div>
+                        </div>
+                    <p class="text-slate-600">
+                        <i class="fas fa-info-circle mr-2" style="color: #1a365d;"></i>
+                        Outside these areas? Call us to check availability. We may be able to accommodate additional locations.
+                    </p>
+                </div>
+                <div class="bg-slate-100 rounded-2xl p-8 lg:p-12">
+                    <h3 class="text-2xl font-bold text-slate-900 mb-6 text-center">Why Mobile Service?</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="bg-[#1a365d] rounded-full p-2 mr-4 mt-1">
+                                <i class="fas fa-ban text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 mb-1">No Tow Needed</h4>
+                                <p class="text-slate-600">Save money and hassle by avoiding expensive towing fees to a shop.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-[#1a365d] rounded-full p-2 mr-4 mt-1">
+                                <i class="fas fa-clock text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 mb-1">Save Time</h4>
+                                <p class="text-slate-600">No waiting rooms or dropped-off cars. We work on your schedule at your location.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-[#1a365d] rounded-full p-2 mr-4 mt-1">
+                                <i class="fas fa-eye text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 mb-1">Watch The Work</h4>
+                                <p class="text-slate-600">See exactly what's being done to your vehicle and ask questions in real-time.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-[#1a365d] rounded-full p-2 mr-4 mt-1">
+                                <i class="fas fa-home text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 mb-1">Convenience</h4>
+                                <p class="text-slate-600">Get your car fixed while you work from home, take care of errands, or relax.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div></div></section>
+
+    <!-- Why Choose Us Section -->
+    <section id="why-us" class="py-16 sm:py-24 gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <span class="text-blue-200 font-bold text-sm uppercase tracking-wide">Why Choose Us</span>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold mt-2 mb-4">Professional Service You Can Trust</h2>
+                <p class="text-lg text-blue-100 max-w-2xl mx-auto">Certified, equipped, and committed to honest automotive repair.</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-user-graduate text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">ASE Certified</h3>
+                    <p class="text-blue-100 leading-relaxed">Automotive Service Excellence certified technician with proven expertise and ongoing training.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-stamp text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">NYS Inspector</h3>
+                    <p class="text-blue-100 leading-relaxed">Licensed New York State vehicle inspector authorized to perform official safety and emissions inspections.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-laptop-code text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Professional Diagnostics</h3>
+                    <p class="text-blue-100 leading-relaxed">Autel + Launch scanners and professional-grade tools for accurate diagnosis on all makes and models.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-file-invoice-dollar text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Upfront Pricing</h3>
+                    <p class="text-blue-100 leading-relaxed">$100/hr labor rate. No hidden fees or surprise charges. You'll know the cost before work begins.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-truck-pickup text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">No Tow Needed</h3>
+                    <p class="text-blue-100 leading-relaxed">We come to you whether you're at home, work, or stranded roadside. Save on expensive towing costs.</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
+                    <div class="bg-white rounded-lg w-14 h-14 flex items-center justify-center mb-6">
+                        <i class="fas fa-shield-alt text-2xl" style="color: #1a365d;"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Fully Insured</h3>
+                    <p class="text-blue-100 leading-relaxed">Complete liability insurance coverage for your peace of mind while we work on your vehicle.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Book Now Section -->
+    <section id="book" class="py-16 sm:py-24 bg-slate-50">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="gradient-bg text-white p-8 sm:p-12 text-center">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold mb-4">Ready To Book Service?</h2>
+                    <p class="text-xl text-blue-100">Get in touch today for fast, professional mobile auto repair</p>
+                </div>
+                <div class="p-8 sm:p-12">
+                    <div class="grid sm:grid-cols-2 gap-6 mb-8">
+                        <a href="tel:315-596-1157" class="btn-call text-white px-8 py-6 rounded-xl font-bold text-lg flex flex-col items-center justify-center shadow-lg">
+                            <i class="fas fa-phone-alt text-3xl mb-3"></i>
+                            <span class="text-xl">Call Now</span>
+                            <span class="text-sm font-normal mt-1">315-596-1157</span>
+                        </a>
+                        <a href="sms:315-596-1157" class="bg-[#1a365d] hover:bg-[#2c5282] text-white px-8 py-6 rounded-xl font-bold text-lg flex flex-col items-center justify-center shadow-lg btn-text">
+                            <i class="fas fa-comment-dots text-3xl mb-3"></i>
+                            <span class="text-xl">Text Us</span>
+                            <span class="text-sm font-normal mt-1">Answered 7 days a week</span>
+                        </a>
+                    </div>
+                    <div class="bg-slate-50 rounded-xl p-6 sm:p-8">
+                        <h3 class="font-bold text-slate-900 text-lg mb-4 text-center">Contact Information</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-envelope text-xl mr-4 mt-1" style="color: #1a365d;"></i>
+                                <div>
+                                    <p class="text-sm text-slate-600 font-semibold">Email</p>
+                                    <a href="mailto:Lbarone917@gmail.com" class="text-slate-900 font-medium hover:text-[#1a365d] break-all">Lbarone917@gmail.com</a>
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-clock text-xl mr-4 mt-1" style="color: #1a365d;"></i>
+                                <div>
+                                    <p class="text-sm text-slate-600 font-semibold">Business Hours</p>
+                                    <p class="text-slate-900 font-medium">Monday - Friday: 8am – 6pm</p>
+                                    <p class="text-slate-900 font-medium">Saturday: By Appointment</p>
+                                </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-dollar-sign text-xl mr-4 mt-1" style="color: #1a365d;"></i>
+                                <div>
+                                    <p class="text-sm text-slate-600 font-semibold">Labor Rate</p>
+                                    <p class="text-slate-900 font-medium">$100/hr - Upfront Pricing</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></section>
+
+    <!-- Footer -->
+    <footer class="gradient-bg text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="bg-white rounded-lg p-2">
+                            <i class="fas fa-wrench text-xl" style="color: #1a365d;"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold">Lake Effect Mechanic</h3>
+                            <p class="text-sm text-blue-200">Mobile Auto Repair</p>
+                        </div>
+                    <p class="text-blue-100 text-sm leading-relaxed">
+                        Professional mobile mechanic service serving Oswego, Fulton, and Mexico NY. ASE Certified &amp; Fully Insured.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-blue-100">
+                        <li><a href="#services" class="hover:text-white transition">Services</a></li>
+                        <li><a href="#area" class="hover:text-white transition">Service Area</a></li>
+                        <li><a href="#why-us" class="hover:text-white transition">Why Choose Us</a></li>
+                        <li><a href="#book" class="hover:text-white transition">Book Now</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-lg mb-4">Contact</h4>
+                    <ul class="space-y-3 text-blue-100">
+                        <li class="flex items-center">
+                            <i class="fas fa-phone mr-3"></i>
+                            <a href="tel:315-596-1157" class="hover:text-white transition">315-596-1157</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-envelope mr-3"></i>
+                            <a href="mailto:Lbarone917@gmail.com" class="hover:text-white transition break-all">Lbarone917@gmail.com</a>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-comment-dots mr-3"></i>
+                            <span>Text answered 7 days a week</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/20 pt-8 text-center text-blue-200 text-sm">
+                <p>© 2025 Lake Effect Mechanic. All rights reserved. | lakeeffectmechanic.com | Lbarone917@gmail.com</p>
+                <p class="mt-2">Fully Insured | ASE Certified | NYS Licensed Inspector</p>
+            </div>
+        </div>
+    </div></footer>
+
+    <!-- Sticky Call Button Mobile -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-2xl z-40">
+        <div class="grid grid-cols-2 gap-3">
+            <a href="tel:315-596-1157" class="btn-call text-white px-4 py-3 rounded-lg font-bold text-center flex items-center justify-center">
+                <i class="fas fa-phone-alt mr-2"></i>Call
+            </a>
+            <a href="sms:315-596-1157" class="bg-[#1a365d] text-white px-4 py-3 rounded-lg font-bold text-center flex items-center justify-center hover:bg-[#2c5282]">
+                <i class="fas fa-comment-dots mr-2"></i>Text
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', function() {
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#' && href.length > 1) {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        const headerOffset = 80;
+                        const elementPosition = target.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Add padding to body on mobile to account for sticky call button
+        if (window.innerWidth < 1024) {
+            document.body.style.paddingBottom = '80px';
+        }
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth < 1024) {
+                document.body.style.paddingBottom = '80px';
+            } else {
+                document.body.style.paddingBottom = '0';
+            }
+        });
+    </script>
+
+</body></html>
